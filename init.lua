@@ -43,6 +43,7 @@ vim.opt.scrolloff = 5
 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<leader>w', '<cmd>:w<CR>')
+vim.keymap.set('n', '<leader>W', '<cmd>:wa<CR>')
 vim.keymap.set('n', '<leader>x', '<cmd>:bd<CR>')
 
 -- BufferLine keymaps
@@ -344,6 +345,7 @@ require('lazy').setup({
       local servers = {
         clangd = {},
         gopls = {},
+        cssls = {},
         rust_analyzer = {},
         emmet_ls = {},
         tailwindcss = {},

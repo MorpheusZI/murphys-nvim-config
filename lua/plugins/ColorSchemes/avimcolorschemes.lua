@@ -3,6 +3,6 @@ return {
   priority = 1000,
   lazy = false,
   init = function()
-    vim.cmd [[colorscheme alduin]]
+    vim.cmd [[colorscheme gotham]]
   end,
 }

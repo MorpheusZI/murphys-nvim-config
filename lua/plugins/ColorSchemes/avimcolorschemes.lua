@@ -9,7 +9,7 @@ return {
       if current_hour >= 20 then -- 8pm (20:00) or later
         vim.cmd [[colorscheme alduin]]
       else
-        vim.cmd [[colorscheme citruszest]]
+        vim.cmd [[colorscheme onedark]]
       end
     end
 

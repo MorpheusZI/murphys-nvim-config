@@ -7,9 +7,9 @@ return {
       local current_hour = tonumber(os.date '%H')
 
       if current_hour >= 20 then -- 8pm (20:00) or later
-        vim.cmd [[colorscheme alduin]]
+        vim.cmd [[colorscheme bamboo]]
       else
-        vim.cmd [[colorscheme onedark]]
+        vim.cmd [[colorscheme citruszest]]
       end
     end
 

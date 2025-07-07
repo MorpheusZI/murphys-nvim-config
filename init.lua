@@ -194,7 +194,7 @@ require('lazy').setup({
       require('telescope').setup {
         defaults = {
           file_ignore_patterns = {
-            'node_modules',
+            'node_modules/',
           },
         },
         extensions = {
@@ -414,6 +414,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        blade = { 'blade-formatter' },
       },
     },
   },

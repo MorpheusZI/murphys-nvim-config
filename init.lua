@@ -1,6 +1,6 @@
 --[[
 
-=====================================================================
+ni=====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
 ========                                    .-----.          ========
@@ -92,6 +92,13 @@ do
   -- Enable faster startup by caching compiled Lua modules
   vim.loader.enable()
 
+  -- Add custom filetypes (e.g. Laravel Blade templates)
+  vim.filetype.add {
+    pattern = {
+      ['.*%.blade%.php'] = 'blade',
+    },
+  }
+
   -- Set <space> as the leader key
   -- See `:help mapleader`
   --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -99,7 +106,7 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -110,7 +117,7 @@ do
   vim.o.number = true
   -- You can also add relative line numbers, to help with jumping.
   --  Experiment for yourself to see if you like it!
-  -- vim.o.relativenumber = true
+  vim.o.relativenumber = true
 
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
@@ -155,7 +162,7 @@ do
   --  It is very similar to `vim.o` but offers an interface for conveniently interacting with tables.
   --   See `:help lua-options`
   --   and `:help lua-guide-options`
-  vim.o.list = true
+  vim.o.list = false
   vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
   -- Preview substitutions live, as you type!
@@ -371,30 +378,19 @@ do
     -- Document existing key chains
     spec = {
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
-      { '<leader>t', group = '[T]oggle' },
+      { '<leader>t', group = '[T]oggle / [T]erminal' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
+      { '<leader>n', group = '[N]eo-tree' },
+      { '<leader>g', group = '[G]it' },
+      { '<leader>b', group = '[B]uffer' },
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
 
-  -- [[ Colorscheme ]]
-  -- You can easily change to a different colorscheme.
-  -- Change the name of the colorscheme plugin below, and then
-  -- change the command under that to load whatever the name of that colorscheme is.
-  --
-  -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
-  ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
-    styles = {
-      comments = { italic = false }, -- Disable italics in comments
-    },
-  }
+  vim.pack.add { gh 'mellow-theme/mellow.nvim' }
 
   -- Load the colorscheme here.
-  -- Like many other themes, this one has different styles, and you could load
-  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
+  vim.cmd.colorscheme 'mellow'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -426,9 +422,23 @@ do
   -- - sr)'  - [S]urround [R]eplace [)] [']
   require('mini.surround').setup()
 
-  -- Simple and easy statusline.
-  --  You could remove this setup call if you don't like it,
-  --  and try some other statusline plugin
+  -- Minimal and fast autopairs
+  require('mini.pairs').setup()
+
+  -- Smooth animations (cursor path, scroll, resize, win open/close)
+  require('mini.animate').setup()
+
+  -- Buffer removal utility (prevents closing window splits when deleting buffers)
+  require('mini.bufremove').setup()
+
+  -- Buffer navigation mappings under <leader>b
+  vim.keymap.set('n', '<leader>bn', '<cmd>bnext<CR>', { desc = '[B]uffer [n]ext' })
+  vim.keymap.set('n', '<leader>bp', '<cmd>bprevious<CR>', { desc = '[B]uffer [p]revious' })
+  vim.keymap.set('n', '<leader>bb', '<cmd>Telescope buffers<CR>', { desc = '[B]uffer list/search' })
+  vim.keymap.set('n', '<leader>bd', function()
+    require('mini.bufremove').delete(0, false)
+  end, { desc = '[B]uffer [d]elete' })
+
   local statusline = require 'mini.statusline'
   -- Set `use_icons` to true if you have a Nerd Font
   statusline.setup { use_icons = vim.g.have_nerd_font }
@@ -438,9 +448,6 @@ do
   -- cursor location to LINE:COLUMN
   ---@diagnostic disable-next-line: duplicate-set-field
   statusline.section_location = function() return '%2l:%-2v' end
-
-  -- ... and there is more!
-  --  Check out: https://github.com/nvim-mini/mini.nvim
 end
 
 -- ============================================================
@@ -517,8 +524,6 @@ do
   vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
   vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
-  -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
-  -- If you later switch picker plugins, this is where to update these mappings.
   vim.api.nvim_create_autocmd('LspAttach', {
     group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
     callback = function(event)
@@ -686,16 +691,54 @@ do
   --  See `:help lsp-config` for information about keys and how to configure
   ---@type table<string, vim.lsp.Config>
   local servers = {
-    -- clangd = {},
-    -- gopls = {},
-    -- pyright = {},
-    -- rust_analyzer = {},
-    --
-    -- Some languages (like typescript) have entire language plugins that can be useful:
-    --    https://github.com/pmizio/typescript-tools.nvim
-    --
-    -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
+    clangd = {},        -- C/C++
+    gopls = {},         -- Go
+    rust_analyzer = {}, -- Rust
+    ts_ls = {},         -- JavaScript / TypeScript
+    html = {
+      filetypes = { 'html', 'blade' },
+      init_options = {
+        provideFormatter = true,
+        embeddedLanguages = { css = true, javascript = true },
+        configurationSection = { 'html', 'css', 'javascript' },
+      },
+    },
+    cssls = {},         -- CSS
+    svelte = {},        -- Svelte
+    emmet_ls = {
+      filetypes = { 'html', 'blade', 'css', 'sass', 'scss', 'less', 'javascriptreact', 'typescriptreact', 'svelte', 'vue', 'php' },
+      init_options = {
+        html = {
+          options = {
+            ['bem.enabled'] = true,
+          },
+        },
+      },
+    },
+    intelephense = {
+      settings = {
+        intelephense = {
+          files = {
+            maxSize = 3000000, -- 3MB max file size to prevent indexer warnings
+            exclude = {
+              '**/.git/**',
+              '**/.svn/**',
+              '**/.hg/**',
+              '**/CVS/**',
+              '**/.DS_Store/**',
+              '**/node_modules/**',
+              '**/bower_components/**',
+              '**/vendor/**/{Tests,tests}/**',
+              '**/vendor/**/{vendor}/**',
+            },
+          },
+          completion = {
+            insertUseDeclaration = true,
+            fullyQualifyGlobalConstantsAndFunctions = false,
+          },
+        },
+      },
+    },
 
     stylua = {}, -- Used to format Lua code
 
@@ -790,12 +833,8 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      php = { 'pint', 'php_cs_fixer', stop_after_first = true },
+      blade = { 'blade-formatter' },
     },
   }
 
@@ -811,45 +850,34 @@ do
 
   -- NOTE: You can also specify plugin using a version range for its git tag.
   --  See `:help vim.version.range()` for more info
-  vim.pack.add { { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' } }
-  require('luasnip').setup {}
+  vim.pack.add {
+    { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' },
+    gh 'rafamadriz/friendly-snippets',
+  }
+  local luasnip = require 'luasnip'
+  luasnip.setup {}
+  require('luasnip.loaders.from_vscode').lazy_load()
+  -- Extend blade filetype to include html and php snippets
+  luasnip.filetype_extend('blade', { 'html', 'php' })
 
-  -- `friendly-snippets` contains a variety of premade snippets.
-  --    See the README about individual language/framework/plugin snippets:
-  --    https://github.com/rafamadriz/friendly-snippets
-  --
-  -- vim.pack.add { gh 'rafamadriz/friendly-snippets' }
-  -- require('luasnip.loaders.from_vscode').lazy_load()
+  -- [[ Auto-tag (Auto-close and auto-rename HTML/Blade/JSX tags) ]]
+  vim.pack.add { gh 'windwp/nvim-ts-autotag' }
+  require('nvim-ts-autotag').setup {
+    opts = {
+      enable_close = true,
+      enable_rename = true,
+      enable_close_on_slash = true,
+    },
+  }
 
   -- [[ Autocomplete Engine ]]
   vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
   require('blink.cmp').setup {
     keymap = {
-      -- 'default' (recommended) for mappings similar to built-in completions
-      --   <c-y> to accept ([y]es) the completion.
-      --    This will auto-import if your LSP supports it.
-      --    This will expand snippets if the LSP sent a snippet.
-      -- 'super-tab' for tab to accept
-      -- 'enter' for enter to accept
-      -- 'none' for no mappings
-      --
-      -- For an understanding of why the 'default' preset is recommended,
-      -- you will need to read `:help ins-completion`
-      --
-      -- No, but seriously. Please read `:help ins-completion`, it is really good!
-      --
-      -- All presets have the following mappings:
-      -- <tab>/<s-tab>: move to right/left of your snippet expansion
-      -- <c-space>: Open menu or open docs if already open
-      -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-      -- <c-e>: Hide menu
-      -- <c-k>: Toggle signature help
-      --
-      -- See `:help blink-cmp-config-keymap` for defining your own keymap
       preset = 'default',
-
-      -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-      --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+      ['<CR>'] = { 'accept', 'fallback' },
+      ['<Tab>'] = { 'snippet_forward', 'fallback' },
+      ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
     },
 
     appearance = {
@@ -859,9 +887,7 @@ do
     },
 
     completion = {
-      -- By default, you may press `<c-space>` to show the documentation.
-      -- Optionally, set `auto_show = true` to show the documentation after a delay.
-      documentation = { auto_show = false, auto_show_delay_ms = 500 },
+      documentation = { auto_show = true, auto_show_delay_ms = 200 },
     },
 
     sources = {
@@ -897,9 +923,45 @@ do
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
-  -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  -- Ensure basic and common language parsers are installed
+  local parsers = {
+    'bash',
+    'blade',
+    'c',
+    'css',
+    'diff',
+    'go',
+    'html',
+    'javascript',
+    'json',
+    'lua',
+    'luadoc',
+    'markdown',
+    'markdown_inline',
+    'php',
+    'phpdoc',
+    'python',
+    'query',
+    'rust',
+    'svelte',
+    'toml',
+    'tsx',
+    'typescript',
+    'vim',
+    'vimdoc',
+    'yaml',
+  }
   require('nvim-treesitter').install(parsers)
+
+  -- Register Blade parser for Treesitter
+  require('nvim-treesitter.parsers').blade = {
+    install_info = {
+      url = 'https://github.com/EmranMR/tree-sitter-blade',
+      files = { 'src/parser.c' },
+      branch = 'main',
+    },
+    filetype = 'blade',
+  }
 
   ---@param buf integer
   ---@param language string
@@ -930,16 +992,34 @@ do
       local language = vim.treesitter.language.get_lang(filetype)
       if not language then return end
 
-      local installed_parsers = require('nvim-treesitter').get_installed 'parsers'
-
-      if vim.tbl_contains(installed_parsers, language) then
-        -- Enable the parser if it is already installed
+      -- If parser is already installed and usable, attach immediately without disk scan
+      if vim.treesitter.language.add(language) then
         treesitter_try_attach(buf, language)
-      elseif vim.tbl_contains(available_parsers, language) then
-        -- If a parser is available in `nvim-treesitter`, auto-install it and enable it after the installation is done
-        require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
+        return
+      end
+
+      -- If a parser is available in nvim-treesitter, install asynchronously without blocking the UI (:await)
+      if vim.tbl_contains(available_parsers, language) then
+        require('nvim-treesitter').install(language)
+        local timer = vim.uv.new_timer()
+        if timer then
+          local retries = 0
+          timer:start(500, 500, vim.schedule_wrap(function()
+            retries = retries + 1
+            if not vim.api.nvim_buf_is_valid(buf) or retries > 20 then
+              timer:stop()
+              timer:close()
+              return
+            end
+            if vim.treesitter.language.add(language) then
+              treesitter_try_attach(buf, language)
+              timer:stop()
+              timer:close()
+            end
+          end))
+        end
       else
-        -- Try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`
+        -- Try to enable treesitter features in case the parser exists but is not available from nvim-treesitter
         treesitter_try_attach(buf, language)
       end
     end,
@@ -963,15 +1043,16 @@ do
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
-  -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
+  require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
+  require 'kickstart.plugins.fugitive' -- adds git commands integration
+  require 'kickstart.plugins.tiny-term' -- adds floating/split terminal support
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
+-- vim: ts=2 sts=2 sw=2 
